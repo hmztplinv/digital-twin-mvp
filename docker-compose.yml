@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  # 1. MQTT Broker (Haberleşme Katmanı)
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: mqtt_broker
+    ports:
+      - "1883:1883" # MQTT Portu
+      - "9001:9001" # Websocket Portu
+    volumes:
+      - ./docker/mosquitto.conf:/mosquitto/config/mosquitto.conf
+
+  # 2. Time-Series DB (Veri Saklama Katmanı)
+  influxdb:
+    image: influxdb:2.7
+    container_name: influxdb_v2
+    ports:
+      - "8086:8086"
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=adminpassword
+      - DOCKER_INFLUXDB_INIT_ORG=my-org
+      - DOCKER_INFLUXDB_INIT_BUCKET=energy_data
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=my-super-secret-auth-token
+    volumes:
+      - influxdb2-data:/var/lib/influxdb2
+
+volumes:
+  influxdb2-data:
