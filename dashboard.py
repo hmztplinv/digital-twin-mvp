@@ -14,7 +14,7 @@ INFLUX_BUCKET = "energy_data"
 
 st.set_page_config(page_title="GreenTwin - SKDM Hazır Dijital İkiz", page_icon="🌿", layout="wide")
 
-# CSS Düzenlemeleri
+# CSS: Sayfa titremesini önle ve butonları düzenle
 st.markdown("""
     <style>
         .block-container {padding-top: 1rem;}
@@ -33,6 +33,8 @@ client = get_client()
 # --- TÜRKÇE KARAKTER DÜZELTİCİ (CRASH ENGELLEYİCİ) ---
 def tr_to_en(text):
     """PDF oluştururken latin-1 hatasını önlemek için Türkçe karakterleri değiştirir."""
+    if text is None: return ""
+    text = str(text)
     replacements = {
         'İ': 'I', 'ı': 'i', 'Ö': 'O', 'ö': 'o', 'Ü': 'U', 'ü': 'u',
         'Ş': 'S', 'ş': 's', 'Ğ': 'G', 'ğ': 'g', 'Ç': 'C', 'ç': 'c'
@@ -128,6 +130,7 @@ def create_skdm_report(df, total_co2, anomaly_count, order_info=None):
     pdf.set_font("Arial", 'I', 10)
     pdf.multi_cell(0, 10, tr_to_en("Bu rapor, TUBITAK Yesil Donusum projesi kapsaminda gelistirilen 'GreenTwin' yazilimi tarafindan otomatik olarak olusturulmustur."))
     
+    # encode('latin-1', 'ignore') hatalı karakterleri atlayarak çökmeyi önler
     return pdf.output(dest='S').encode('latin-1', 'ignore') 
 
 # --- SESSION ---
@@ -228,7 +231,7 @@ while True:
             label_text = f"Toplam Karbon ({st.session_state.work_order['order_id']})" if st.session_state.work_order['active'] else "Toplam Karbon (Son 15 Dk)"
             _ = co2_metric_ph.metric(label_text, f"{total_co2_session:.4f} kg CO2e")
             
-            # PDF BUTONU (ARTIK GÜVENLİ)
+            # PDF BUTONU (ARTIK GÜVENLİ - tr_to_en eklendi)
             pdf_data = create_skdm_report(df, total_co2_session, anomaly_count, st.session_state.work_order)
             _ = report_btn_ph.download_button(
                 label=f"📄 Raporu İndir ({st.session_state.work_order['order_id'] or 'Genel'})",
@@ -252,6 +255,5 @@ while True:
         time.sleep(1)
 
     except Exception as e:
-        # Hata anında terminale bas, ekrana basma (döngü kopmasın)
         print(f"HATA: {e}")
         time.sleep(1)
